@@ -253,8 +253,7 @@ void grow_snake(snake_t *s)
    if (s->body_len >= SNAKE_BODY_LEN)
       return;
    
-   int dir = s->body[s->body_len - 1];
-   s->body[s->body_len] = dir;
+   s->body[s->body_len] = s->body[s->body_len - 1];
    s->body_len++;
 }
 
@@ -298,7 +297,7 @@ void solve_collisions()
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       pl = players[i];
-      if (pl != NULL && playing[i])
+      if (pl != NULL && playing[i] == 1)
       {
          posx = pl->hposx;
          posy = pl->hposy;

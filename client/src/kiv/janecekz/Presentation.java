@@ -119,9 +119,9 @@ public class Presentation extends JPanel implements ActionListener,
 				String[] in = aditional.split(",");
 				String name = in[0];
 				String color = in[1];
-				System.arraycopy(name.getBytes(), 0, buffer, Math.min(len, 10),
-						name.length());
-				len += name.length() + 1;
+				System.arraycopy(name.getBytes(), 0, buffer, len,
+						Math.min(10, name.length()));
+				len += Math.min(10, name.length()) + 1;
 				System.arraycopy(color.getBytes(), 0, buffer, len,
 						color.length());
 				len += color.length() + 1;

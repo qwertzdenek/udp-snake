@@ -45,11 +45,8 @@ public class RenderPanel extends JPanel {
 		
 		for (int i = 0; i < m_height; i++) {
 			for (int j = 0; j < m_width; j++) {
-				int val = i * m_width + j;
-				squareVal = mapData[val];
+				squareVal = mapData[i * m_width + j];
 				if (squareVal <= Backend.MAX_PLAYERS) {
-					if (m_colors[squareVal - 1] < 50)
-						System.out.println("NOOOOOO!!!!");
 					c = p.awtColors[m_colors[squareVal - 1] - 50];
 				} else if (squareVal == Backend.MAX_PLAYERS + 1) {
 					c = Color.BLACK;
