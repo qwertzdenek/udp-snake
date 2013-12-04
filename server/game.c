@@ -33,11 +33,11 @@ you can play it with your friends over the network.
 
 - Step 3
 
-  run server: `./snake-server -r [mapname.map]`
+  run server: `./snake-server -m [mapname.map] -p [port number]`
 
 - Step 4
 
-  run up to 10 clients: `java Client [server ip] [name]`
+  run up to 10 clients: `java kiv.janecekz.Presentation`
 */
 
 #include <stdio.h>
@@ -387,7 +387,7 @@ void count_score()
 
 /**
  * prints snake info to the stdout
- * \param snake to print
+ * \param s snake to print
  */
 void print_snake(const snake_t *s)
 {
@@ -465,7 +465,9 @@ void move_snake(snake_t *s, char dir)
 }
 
 /**
- * 
+ * Search for the player in the players array by addres and port.
+ * \param client_address client IP address
+ * \param port client port
  */
 int get_player_by_address(in_addr_t client_address, uint16_t port)
 {
@@ -486,7 +488,8 @@ int get_player_by_address(in_addr_t client_address, uint16_t port)
 
 /**
  * registers desired move for the next round
- * \param id player id
+ * \param client_address client IP address
+ * \param port client port
  * \param dir char representation of direction
  */
 void want_move(in_addr_t address, uint16_t port, int dir)
@@ -504,6 +507,8 @@ void want_move(in_addr_t address, uint16_t port, int dir)
  * registers desired new player for the next round
  * \param name player name
  * \param color color id. Use constants C_* from `game.h`.
+ * \param client_address client IP address
+ * \param port client port
  */
 void want_new_player(char *name, int color, in_addr_t address, uint16_t port)
 {
@@ -512,7 +517,8 @@ void want_new_player(char *name, int color, in_addr_t address, uint16_t port)
 
 /**
  * registers desired remove of the player for the next round
- * \param id player id
+ * \param client_address client IP address
+ * \param port client port
  */
 void want_rem_player(in_addr_t address, uint16_t port)
 {
@@ -526,7 +532,8 @@ void want_rem_player(in_addr_t address, uint16_t port)
 
 /**
  * registers that player is ready to play
- * \param name player id
+ * \param client_address client IP address
+ * \param port client port
  */
 void want_start(in_addr_t address, uint16_t port)
 {
@@ -542,7 +549,8 @@ void want_start(in_addr_t address, uint16_t port)
 
 /**
  * registers that player is ready to play
- * \param name player id
+ * \param client_address client IP address
+ * \param port client port
  */
 void want_be_alive(in_addr_t address, uint16_t port)
 {
@@ -556,7 +564,7 @@ void want_be_alive(in_addr_t address, uint16_t port)
 
 /**
  * Returns first free id to `players` array
- * \return id or -1 when not found
+ * \return id or -1 when player was not found
  */
 int find_id()
 {
@@ -601,6 +609,11 @@ void print_map(map_t *m)
    printf("_______________________________________\n");
 }
 
+/**
+ * Creates STATUS packet
+ * \param buf output buffer
+ * \return length of the message
+ */
 int write_status(char *buf)
 {
    int len = 2; // first is packet head (not our problem)
@@ -657,6 +670,9 @@ int write_status(char *buf)
    return len;
 }
 
+/**
+ * Writes fruit positions on the map.
+ */
 void spawn_fruit()
 {
    int randx = 0;
@@ -732,7 +748,8 @@ void spawn_player(snake_t *p)
  * Add player to the game
  * \param name player name
  * \param color C_* constant
- * \param dir starting direction
+ * \param client_address client IP address
+ * \param port client port
  * \return 1 when player was added to the game. 0 when wasn't.
  */
 int add_player(char *name, int color, in_addr_t address, uint16_t port)
@@ -952,7 +969,7 @@ void end(int signum)
 }
 
 /**
- * program start function
+ * main function
  */
 int main(int argc, char *argv[])
 {
@@ -992,6 +1009,11 @@ int main(int argc, char *argv[])
          if (i < argc - 1)
          {
             sport = atoi(argv[i + 1]);
+            if (sport <= 0)
+            {
+               sport = 10100;
+               printf("(WW) using default port 10100\n");
+            }
             i++;
          }
       }

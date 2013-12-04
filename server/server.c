@@ -55,6 +55,7 @@ void *start_server(void *param)
    if(bind(server_sockfd, (struct sockaddr *) &server_address, server_len) != 0)
    {
       perror("oops: server bind error");
+      end(0);
       pthread_exit(NULL);
    }
 

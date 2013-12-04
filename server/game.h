@@ -28,4 +28,6 @@ void want_rem_player(in_addr_t address, uint16_t port);
 void want_start(in_addr_t address, uint16_t port);
 void want_be_alive(in_addr_t address, uint16_t port);
 
+void end(int signum);
+
 #endif
