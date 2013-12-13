@@ -46,7 +46,7 @@ void *start_server(void *param)
 
    server_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
    server_address.sin_family = AF_INET;
-   server_address.sin_addr = address;
+   server_address.sin_addr = saddress;
    server_address.sin_port = htons(sport);
 
    server_len = sizeof(server_address);
@@ -60,6 +60,8 @@ void *start_server(void *param)
    }
 
    listening = 1;
+
+   printf("Running server on %s:%d\n", inet_ntoa(saddress), sport);
 
    while (listening)
    {

@@ -131,7 +131,7 @@ typedef struct
 
 // **** variables ****
 int sport; /**< actual server port */
-struct in_addr address; /**< actual server address */
+struct in_addr saddress; /**< actual server address */
 map_t skel_map; /**< holds skeleton map */
 map_t act_map; /**< holds actual map */
 char *map = NULL; /**< filename of actual map */
@@ -990,6 +990,11 @@ int main(int argc, char *argv[])
    int res = 0;
    int i;
    struct addrinfo *saddr;
+   struct addrinfo hints;
+   
+   memset(&hints, 0, sizeof(struct addrinfo));
+   hints.ai_family = AF_INET;
+   saddress.s_addr = INADDR_ANY;
    
    signal(SIGINT, end);
    memset((void *) players, 0, MAX_PLAYERS*sizeof(snake_t *));
@@ -1037,15 +1042,15 @@ int main(int argc, char *argv[])
       {
          if (i < argc - 1)
          {
-            res = getaddrinfo(argv[i + 1], NULL, NULL, &saddr);
+            res = getaddrinfo(argv[i + 1], NULL, &hints, &saddr);
             if (res < 0)
             {
                clean_while_parse(&map, "(EE) Error while parsing address");
                return 1;
             }
             
-            address = ((struct sockaddr_in *) saddr->ai_addr)->sin_addr;
-            printf("%s\n", inet_ntoa(address));
+            saddress = ((struct sockaddr_in *) saddr->ai_addr)->sin_addr;
+            freeaddrinfo(saddr);
             i++;
          }
       }
@@ -1056,21 +1061,23 @@ int main(int argc, char *argv[])
       }
    }
    
+   printf("%s\n", inet_ntoa(saddress));
+   
    // run server
-   //res = run();
+   res = run();
 
    // cleanup
-   free(map);
-   freeaddrinfo(saddr);
+   if (map != NULL)
+	 free(map);
 
-   //~ for (i = 0; i < MAX_PLAYERS; i++)
-   //~ {
-      //~ if (players[i] != NULL)
-      //~ {
-         //~ free(players[i]->name);
-         //~ free(players[i]);
-      //~ }
-   //~ }
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      if (players[i] != NULL)
+      {
+         free(players[i]->name);
+         free(players[i]);
+      }
+   }
 
    /* Last thing that main() should do */
    pthread_exit(&res);

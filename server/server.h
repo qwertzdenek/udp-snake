@@ -28,7 +28,7 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #define M_WAIT '\6'
 
 extern int sport; /**< server port */
-extern struct in_addr address;  /**< address in network byte order */
+extern struct in_addr saddress;  /**< address in network byte order */
 extern int server_sockfd;  /**< server socket */
 
 void *start_server(void *param);
