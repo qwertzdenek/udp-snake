@@ -50,6 +50,8 @@ you can play it with your friends over the network.
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/types.h>
+#include <netdb.h>
 
 #include "game.h"
 #include "server.h"
@@ -129,6 +131,7 @@ typedef struct
 
 // **** variables ****
 int sport; /**< actual server port */
+struct in_addr address; /**< actual server address */
 map_t skel_map; /**< holds skeleton map */
 map_t act_map; /**< holds actual map */
 char *map = NULL; /**< filename of actual map */
@@ -411,7 +414,8 @@ void help()
    printf("Použití: snake-server [PŘEPÍNAČ]…\n"
                         "Přepínače\n  -h   help screen\n"
                         "  -m {name.map}   map to load\n"
-                        "  -p {port number}   listen on port\n");
+                        "  -p {port number}   listen on port\n"
+                        "  -a {address/name}   address to listen on\n");
 }
 
 /**
@@ -968,6 +972,16 @@ void end(int signum)
    game = 0;
 }
 
+void clean_while_parse(char **map, char *message)
+{
+   printf("%s\n",message);
+   if (map != NULL)
+   {
+      free(*map);
+      *map = NULL;
+   }
+}
+
 /**
  * main function
  */
@@ -975,6 +989,8 @@ int main(int argc, char *argv[])
 {
    int res = 0;
    int i;
+   struct addrinfo *saddr;
+   
    signal(SIGINT, end);
    memset((void *) players, 0, MAX_PLAYERS*sizeof(snake_t *));
 
@@ -1009,30 +1025,52 @@ int main(int argc, char *argv[])
          if (i < argc - 1)
          {
             sport = atoi(argv[i + 1]);
-            if (sport <= 0)
+            if (sport <= 0 || sport > 65535)
             {
-               sport = 10100;
-               printf("(WW) using default port 10100\n");
+               clean_while_parse(&map, "(EE) Wrong port");
+               return 1;
             }
             i++;
          }
       }
+      else if (strcmp(argv[i], "-a") == 0)
+      {
+         if (i < argc - 1)
+         {
+            res = getaddrinfo(argv[i + 1], NULL, NULL, &saddr);
+            if (res < 0)
+            {
+               clean_while_parse(&map, "(EE) Error while parsing address");
+               return 1;
+            }
+            
+            address = ((struct sockaddr_in *) saddr->ai_addr)->sin_addr;
+            printf("%s\n", inet_ntoa(address));
+            i++;
+         }
+      }
+      else
+      {
+         clean_while_parse(&map, "(EE) Wrong arguments");
+         return 1;
+      }
    }
    
    // run server
-   res = run();
+   //res = run();
 
    // cleanup
    free(map);
+   freeaddrinfo(saddr);
 
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      if (players[i] != NULL)
-      {
-         free(players[i]->name);
-         free(players[i]);
-      }
-   }
+   //~ for (i = 0; i < MAX_PLAYERS; i++)
+   //~ {
+      //~ if (players[i] != NULL)
+      //~ {
+         //~ free(players[i]->name);
+         //~ free(players[i]);
+      //~ }
+   //~ }
 
    /* Last thing that main() should do */
    pthread_exit(&res);

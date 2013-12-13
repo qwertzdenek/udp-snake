@@ -1,3 +1,5 @@
+# UDP Snake Makefile, Zdeněk Janeček
+
 CC=gcc
 LD=ld
 LDFLAGS=-lc -pthread

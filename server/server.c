@@ -46,7 +46,7 @@ void *start_server(void *param)
 
    server_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
    server_address.sin_family = AF_INET;
-   server_address.sin_addr.s_addr = htonl(INADDR_ANY);
+   server_address.sin_addr = address;
    server_address.sin_port = htons(sport);
 
    server_len = sizeof(server_address);
