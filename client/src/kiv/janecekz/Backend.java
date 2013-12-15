@@ -2,7 +2,6 @@ package kiv.janecekz;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.util.StringTokenizer;
 
 import kiv.janecekz.Presentation.PacketType;
@@ -19,13 +18,11 @@ public class Backend extends Thread {
 	public int[] m_states;
 
 	private boolean listening = true;
-	private final DatagramSocket ds;
 	private final Presentation p;
 	private final byte[] buffer;
 
-	public Backend(DatagramSocket ds, Presentation p) {
+	public Backend(Presentation p) {
 		super();
-		this.ds = ds;
 		this.p = p;
 		buffer = new byte[Presentation.MAX_PAKET_SIZE];
 		m_names = new String[MAX_PLAYERS];
@@ -36,36 +33,7 @@ public class Backend extends Thread {
 	public synchronized void listenStop() throws InterruptedException {
 		listening = false;
 	}
-/*
-	private void print_map() {
-		int i, j;
-		char c;
 
-		for (i = 0; i < m_height; i++) {
-			System.out.print(i+" ");
-			for (j = 0; j < m_width; j++) {
-				switch (mapData[i * m_width + j]) {
-				case 11:
-					c = '#';
-					break;
-				case 13:
-					c = ' ';
-					break;
-				case 12:
-					c = 'o';
-					break;
-				default:
-					c = 's';
-					break;
-				}
-				System.out.print(c);
-			}
-			System.out.printf("\n");
-		}
-		
-		System.out.println("--------------------------\n");
-	}
-*/
 	@Override
 	public void run() {
 		super.run();
@@ -77,7 +45,7 @@ public class Backend extends Thread {
 		DatagramPacket recv = new DatagramPacket(buffer, buffer.length);
 		while (listening) {
 			try {
-				ds.receive(recv);
+				p.ds.receive(recv);
 			} catch (IOException e) {
 				//System.out.println("Neplatný socket");
 				break;
@@ -105,12 +73,17 @@ public class Backend extends Thread {
 				javax.swing.SwingUtilities.invokeLater(p.updateMap);
 				break;
 			case DEAD:
-				p.sendPacket(PacketType.WAIT, null);
+				p.sendPacket(PacketType.WAIT, p.myServer, p.myPort, null);
 				javax.swing.SwingUtilities.invokeLater(p.wantStart);
 				break;
 			case DISCONNECT:
 				javax.swing.SwingUtilities.invokeLater(p.disconnect);
 				listening = false;
+				break;
+			case START:
+				javax.swing.SwingUtilities.invokeLater(p.conEst);
+				p.myServer = recv.getAddress();
+				p.myPort = recv.getPort();
 				break;
 			default:
 				break;

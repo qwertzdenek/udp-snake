@@ -54,6 +54,7 @@ you can play it with your friends over the network.
 #include <netdb.h>
 
 #include "game.h"
+#include "server-one.h"
 #include "server.h"
 #include "queue.h"
 
@@ -62,8 +63,8 @@ you can play it with your friends over the network.
 #define MAX_PACKET_SIZE 1024
 #define SNAKE_BODY_LEN 22
 #define MAP_NAME_LEN 8
-#define MAX_PLAYERS 10
 #define MAX_FRUITS 8
+#define FRUIT_TIME 15
 #define MAP_W 30
 #define MAP_H 30
 
@@ -130,7 +131,8 @@ typedef struct
 } snake_t;
 
 // **** variables ****
-int sport; /**< actual server port */
+int server_sockfd;  /**< server socket */
+in_port_t sport; /**< actual server port */
 struct in_addr saddress; /**< actual server address */
 map_t skel_map; /**< holds skeleton map */
 map_t act_map; /**< holds actual map */
@@ -262,8 +264,8 @@ void grow_snake(snake_t *s)
 
 /**
  * Test if the position is occupied by another snake head.
- * \param posx X coord
- * \param posy Y coord
+ * \param posx X coordination
+ * \param posy Y coordination
  * \param from snake id to test from
  */
 void col_heads(int posx, int posy, int from)
@@ -373,7 +375,7 @@ void rasterize_act_map()
 }
 
 /**
- * 
+ * Counts actual game score to the score array
  */
 void count_score()
 {
@@ -415,7 +417,7 @@ void help()
                         "Přepínače\n  -h   help screen\n"
                         "  -m {name.map}   map to load\n"
                         "  -p {port number}   listen on port\n"
-                        "  -a {address/name}   address to listen on\n");
+                        "  -a {IPv4 address/name}   listen on address\n");
 }
 
 /**
@@ -469,37 +471,13 @@ void move_snake(snake_t *s, char dir)
 }
 
 /**
- * Search for the player in the players array by addres and port.
- * \param client_address client IP address
- * \param port client port
- */
-int get_player_by_address(in_addr_t client_address, uint16_t port)
-{
-   int i = 0;
-   int id = -1;
-   for (i = 0; i < MAX_PLAYERS; i++)
-   {
-      if (players[i] != NULL && client_address == players[i]->address &&
-      port == players[i]->port)
-      {
-         id = i;
-         break;
-      }
-   }
-
-   return id;
-}
-
-/**
  * registers desired move for the next round
  * \param client_address client IP address
  * \param port client port
  * \param dir char representation of direction
  */
-void want_move(in_addr_t address, uint16_t port, int dir)
+void want_move(int id, int dir)
 {
-   int id = get_player_by_address(address, port);
-
    if (id < 0)
       return;
 
@@ -524,10 +502,8 @@ void want_new_player(char *name, int color, in_addr_t address, uint16_t port)
  * \param client_address client IP address
  * \param port client port
  */
-void want_rem_player(in_addr_t address, uint16_t port)
+void want_rem_player(int id)
 {
-   int id = get_player_by_address(address, port);
-
    if (id < 0)
       return;
 
@@ -539,10 +515,8 @@ void want_rem_player(in_addr_t address, uint16_t port)
  * \param client_address client IP address
  * \param port client port
  */
-void want_start(in_addr_t address, uint16_t port)
+void want_start(int id)
 {
-   int id = get_player_by_address(address, port);
-
    if (id < 0)
       return;
 
@@ -556,10 +530,8 @@ void want_start(in_addr_t address, uint16_t port)
  * \param client_address client IP address
  * \param port client port
  */
-void want_be_alive(in_addr_t address, uint16_t port)
+void want_be_alive(int id)
 {
-   int id = get_player_by_address(address, port);
-
    if (id < 0)
       return;
    
@@ -577,7 +549,6 @@ int find_id()
    while (players[act] != NULL)
    {
       act++;
-
       if (act >= MAX_PLAYERS)
          return -1;
    }
@@ -585,6 +556,10 @@ int find_id()
    return act;
 }
 
+/**
+ * Prints main map to the stdout
+ * \param m map to show
+ */
 void print_map(map_t *m)
 {
    int i, j;
@@ -626,7 +601,7 @@ int write_status(char *buf)
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (playing[i] == 1)
+      if (playing[i] >= 0 && players[i] != NULL)
       {
          count++;
          // print his id
@@ -702,7 +677,7 @@ void spawn_fruit()
          fruits[i] = randy;
          fruits[i + 1] = randx;
       }
-      fruit_counter = 10;
+      fruit_counter = FRUIT_TIME;
    }
    else fruit_counter--;
 
@@ -754,21 +729,27 @@ void spawn_player(snake_t *p)
  * \param color C_* constant
  * \param client_address client IP address
  * \param port client port
- * \return 1 when player was added to the game. 0 when wasn't.
+ * \return player id when was added to the game. -1 when wasn't.
  */
 int add_player(char *name, int color, in_addr_t address, uint16_t port)
 {
    snake_t s;
    snake_t *player;
-   int id;
+   int id, i;
    
-   if (get_player_by_address(address, port) >= 0)
-      return 1;
-
+   // find player with the same name
+   for (i = 0; i < MAX_PLAYERS; i++)
+   {
+      if (players[i] != NULL && !strcmp(name, players[i]->name))
+      {
+         return -1;
+      }
+   }
+   
    id = find_id();
 
    if (id < 0)
-      return 0;
+      return -1;
 
    memset((void *) &s, 0, sizeof(snake_t));
 
@@ -783,7 +764,7 @@ int add_player(char *name, int color, in_addr_t address, uint16_t port)
    if (player == NULL)
    {
       perror("Malloc failed");
-      return 0;
+      return -1;
    }
 
    memcpy(player, &s, sizeof(snake_t));
@@ -793,7 +774,7 @@ int add_player(char *name, int color, in_addr_t address, uint16_t port)
    spawn_player(player);
    pcount++;
 
-   return 1;
+   return id;
 }
 
 /**
@@ -801,19 +782,25 @@ int add_player(char *name, int color, in_addr_t address, uint16_t port)
  */
 int run()
 {
+   // main server thread
    pthread_t listener;
+   // listening threads (server.c)
+   pthread_t clients[MAX_PLAYERS];
+   pthread_attr_t attr;
    FILE *map_file;
    //~ FILE *packet_file;
    char *basic_map = "basic.map";
    char *pl_name = NULL;
    char ch;
    char buffer[MAX_PACKET_SIZE]; // for bigger packets
-   int pl_color, i, rc, len;
+   int pl_color, i, rc, len, server_len;
    in_addr_t address;
    uint16_t port;
    struct sockaddr_in client_address;
+   struct sockaddr_in server_address;
    struct in_addr sin_addr;
    int client_len;
+   struct con_info *info;
 
    if (map == NULL)
    {
@@ -832,19 +819,35 @@ int run()
       fclose(map_file);
 
    init_queue(&add_requests);
+   init_server();
 
+   // INITIALIZE main server socket
+   server_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+   server_address.sin_family = AF_INET;
+   server_address.sin_addr = saddress;
+   server_address.sin_port = sport;
+
+   server_len = sizeof(server_address);
+
+   if(bind(server_sockfd, (struct sockaddr *) &server_address, server_len) != 0)
+   {
+      perror("oops: server bind error");
+      return -1;
+   }
+
+   // client init
    client_address.sin_family = AF_INET;
-   client_address.sin_port = htons(sport);
-
-   client_len = sizeof(client_address);
-
-   printf("(I) Running game on map %s\n", map);
+   client_len = sizeof(struct sockaddr_in);
 
    load_map(map);
+   printf("(I) Running game on map %s\n", map);
 
-   // initialize server
-
-   rc = pthread_create(&listener, NULL, start_server, NULL);
+   /* Initialize and set thread detached attribute */
+   pthread_attr_init(&attr);
+   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+   
+   // initialize main server thread
+   rc = pthread_create(&listener, &attr, start_server_one, NULL);
 
    if (rc)
    {
@@ -852,13 +855,15 @@ int run()
       return -1;
    }
 
-   memset(&playing, 0, MAX_PLAYERS*sizeof(int));
+   memset((void *) &playing, 0, MAX_PLAYERS*sizeof(int));
+   memset((void *) players, 0, MAX_PLAYERS*sizeof(snake_t *));
+   memset((void *) &clients, 0, MAX_PLAYERS*sizeof(pthread_t));
 
    // TODO: warmup
    // sleep(10);
 
    game = 1;
-   fruit_counter = 10;
+   fruit_counter = FRUIT_TIME;
 
    while (game)
    {
@@ -880,6 +885,8 @@ int run()
                score[i] = 0;
                playing[i] = 0;
                
+               stop_server(i);
+               pthread_detach(clients[i]);
             }
          }
       }
@@ -891,25 +898,24 @@ int run()
       
       memset(&buffer, 0, MAX_PACKET_SIZE);
       len = write_status((char *) &buffer);
-
+      
       // postprocess
       for (i = 0; i < MAX_PLAYERS; i++)
       {
          if (players[i] != NULL)
          {
+            client_address.sin_addr.s_addr = players[i]->address;
+            client_address.sin_port = players[i]->port;
+            
             if (playing[i] == 0)
             {
                //printf("** player %d is dead\n", i);
                playing[i] = 2; // wait for response
-               client_address.sin_addr.s_addr = players[i]->address;
-               client_address.sin_port = players[i]->port;
                ch = M_DEAD;
                sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
             }
-            client_address.sin_addr.s_addr = players[i]->address;
-            client_address.sin_port = players[i]->port;
+            
             buffer[0] = M_STATE;
-
             sendto(server_sockfd, &buffer, len, 0, (struct sockaddr*) &client_address, client_len);
          }
       }
@@ -919,7 +925,7 @@ int run()
          dequeue(&add_requests, &pl_name, &pl_color, &address, &port);
          rc = add_player(pl_name, pl_color, address, port);
 
-         if (!rc)
+         if (rc == -1)
          {
             client_address.sin_addr.s_addr = address;
             client_address.sin_port = port;
@@ -929,38 +935,44 @@ int run()
          }
          else
          {
+            info = (struct con_info *) malloc(sizeof(struct con_info));
+            info->uid = rc;
+            info->addr = address;
+            info->port = port;
+            
+            // initialize server thread
+            rc = pthread_create(&clients[rc], NULL, start_server, (void *) info);
+            if (rc)
+            {
+               printf("(E) return code from pthread_create() is %d\n", rc);
+               free(info);
+               want_rem_player(rc);
+            }
+            
             sin_addr.s_addr = address;
-            printf( "Connected player %s, color %d and address %s:%d\n", pl_name, pl_color, inet_ntoa(sin_addr), htons(port));
+            printf( "Connected player %s, color %d and address %s:%d\n", pl_name, pl_color, inet_ntoa(sin_addr), ntohs(port));
          }
       }
 
       memset(directions, NONE, MAX_PLAYERS);
-      usleep(500000);
+      usleep(300000);
       //sleep(2);
    }
 
-   stop_server();
-
-   client_address.sin_addr.s_addr = htonl(INADDR_ANY);
-   client_address.sin_port = htons(sport);
-   ch = M_DISCONNECT;
-   sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
-
-   pthread_join(listener, (void *) &rc);
-
-   ch = M_DISCONNECT;
-
+   pthread_attr_destroy(&attr);
+   stop_server_one();
+   shutdown(server_sockfd, SHUT_RDWR);
+   close(server_sockfd);
+   
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (players[i] != NULL)
       {
-         client_address.sin_addr.s_addr = players[i]->address;
-         client_address.sin_port = players[i]->port;
-         sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
+         //printf("detach %d, clinent ID %d\n", i, (unsigned)clients[i]);
+         stop_server(i);
+         pthread_detach(clients[i]);
       }
    }
-
-
    return 0;
 }
 
@@ -974,7 +986,8 @@ void end(int signum)
 
 void clean_while_parse(char **map, char *message)
 {
-   printf("%s\n",message);
+   if (message != NULL)
+      printf("%s\n",message);
    if (map != NULL)
    {
       free(*map);
@@ -995,11 +1008,9 @@ int main(int argc, char *argv[])
    memset(&hints, 0, sizeof(struct addrinfo));
    hints.ai_family = AF_INET;
    saddress.s_addr = INADDR_ANY;
+   sport = 0;
    
    signal(SIGINT, end);
-   memset((void *) players, 0, MAX_PLAYERS*sizeof(snake_t *));
-
-   sport = 10100;
 
    // parse arguments
    for (i = 1; i < argc; i++)
@@ -1030,11 +1041,12 @@ int main(int argc, char *argv[])
          if (i < argc - 1)
          {
             sport = atoi(argv[i + 1]);
-            if (sport <= 0 || sport > 65535)
+            if (sport < 0 || sport > 65535)
             {
                clean_while_parse(&map, "(EE) Wrong port");
                return 1;
             }
+            sport = htons(sport);
             i++;
          }
       }
@@ -1060,8 +1072,6 @@ int main(int argc, char *argv[])
          return 1;
       }
    }
-   
-   printf("%s\n", inet_ntoa(saddress));
    
    // run server
    res = run();

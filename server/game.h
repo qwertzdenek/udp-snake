@@ -22,6 +22,7 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #include <netinet/in.h>
 
 #define SNAKE_NAME_LEN 8
+#define MAX_PLAYERS 10
 
 #define TOP 'T'
 #define LEFT 'L'
@@ -40,12 +41,20 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #define C_BLACK 58
 #define C_GREY 59
 
-void want_move(in_addr_t address, uint16_t port, int dir);
-void want_new_player(char *name, int color, in_addr_t address, uint16_t port);
-void want_rem_player(in_addr_t address, uint16_t port);
-void want_start(in_addr_t address, uint16_t port);
-void want_be_alive(in_addr_t address, uint16_t port);
+struct con_info {
+   int uid;
+   in_addr_t addr;
+   in_port_t port;
+};
 
-void end(int signum);
+extern in_port_t sport; /**< server port */
+extern struct in_addr saddress;  /**< address in network byte order */
+extern int server_sockfd;  /**< server socket */
+
+void want_move(int id, int dir);
+void want_new_player(char *name, int color, in_addr_t address, uint16_t port);
+void want_rem_player(int id);
+void want_start(int id);
+void want_be_alive(int id);
 
 #endif

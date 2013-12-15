@@ -27,78 +27,90 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 
 #define BUFFER_LEN 16
 
-int listening = 0;
+int sockfd[MAX_PLAYERS]; /**< server file descriptors */
+int listening[MAX_PLAYERS];
 
-int server_sockfd; /**< server file descriptor */
+void init_server()
+{
+   memset((void *) &sockfd, 0, MAX_PLAYERS*sizeof(int));
+   memset((void *) &listening, 0, MAX_PLAYERS*sizeof(int));
+}
 
 /**
  * \brief server user input listen loop
  */
 void *start_server(void *param)
 {
-   int server_len, client_len, n;
-   struct sockaddr_in server_address;
+   int client_len, server_len, n;
    struct sockaddr_in client_address;
+   struct sockaddr_in server_address;
    char buffer[BUFFER_LEN];
-   char *name;
-   char *ptr;
-   uint16_t color;
-
-   server_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+   char ch;
+   
+   int uid = ((struct con_info *)param)->uid;
+   in_port_t uport = ((struct con_info *)param)->port;
+   in_addr_t uaddr = ((struct con_info *)param)->addr;
+   
+   free(param);
+   
+   sockfd[uid] = socket(AF_INET, SOCK_DGRAM, 0);
    server_address.sin_family = AF_INET;
    server_address.sin_addr = saddress;
-   server_address.sin_port = htons(sport);
+   server_address.sin_port = 0;
 
    server_len = sizeof(server_address);
-   client_len = sizeof(client_address);
 
-   if(bind(server_sockfd, (struct sockaddr *) &server_address, server_len) != 0)
+   if(bind(sockfd[uid], (struct sockaddr *) &server_address, server_len) != 0)
    {
       perror("oops: server bind error");
-      end(0);
       pthread_exit(NULL);
    }
-
-   listening = 1;
-
-   printf("Running server on %s:%d\n", inet_ntoa(saddress), sport);
-
-   while (listening)
+   
+   client_len = sizeof(client_address);
+   client_address.sin_addr.s_addr = uaddr;
+   client_address.sin_port = uport;
+   
+   ch = M_START;
+   sendto(sockfd[uid], &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
+   
+   listening[uid] = 1;
+   //printf("(I) Client thread %d is starting\n", uid);
+   
+   while (listening[uid])
    {
-      n = recvfrom(server_sockfd, &buffer, BUFFER_LEN, 0, (struct sockaddr *) &client_address, (socklen_t *) &client_len );
+      n = recvfrom(sockfd[uid], &buffer, BUFFER_LEN, 0, (struct sockaddr *) &client_address, (socklen_t *) &client_len );
       
-      if (n < 1)
+      if (n < 0 || client_address.sin_addr.s_addr != uaddr || client_address.sin_port != uport)
          continue;
       
       switch (buffer[0])
       {
-         case M_CONNECT:
-            ptr = strchr((char *) &buffer + 1, '\0'); // find end of string
-            name = malloc(ptr - (char *) &buffer); // alloc string
-            strcpy(name, (char *) &buffer + 1); // copy name
-            color = atoi((char *) (ptr + 1)); // parse color
-            want_new_player(name, color, client_address.sin_addr.s_addr, client_address.sin_port);
-            break;
          case M_MOVE:
-            want_move(client_address.sin_addr.s_addr, client_address.sin_port, buffer[1]);
+            want_move(uid, buffer[1]);
             break;
          case M_START:
-            want_start(client_address.sin_addr.s_addr, client_address.sin_port);
+            want_start(uid);
             break;
          case M_DISCONNECT:
-            want_rem_player(client_address.sin_addr.s_addr, client_address.sin_port);
+            want_rem_player(uid);
             break;
          case M_WAIT:
-            want_be_alive(client_address.sin_addr.s_addr, client_address.sin_port);
+            want_be_alive(uid);
             break;
       }
    }
+   
+   // disconnect our client
+   //ch = M_DISCONNECT;
+   //sendto(sockfd[uid], &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
 
-   printf("(I) Server is exiting\n");
+   //printf("(I) Client thread %d is exiting\n", uid);
    pthread_exit(NULL);
 }
 
-void stop_server()
+void stop_server(int id)
 {
-   listening = 0;
+   listening[id] = 0;
+   shutdown(sockfd[id], SHUT_RDWR);
+   close(sockfd[id]);
 }

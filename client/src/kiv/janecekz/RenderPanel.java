@@ -67,6 +67,10 @@ public class RenderPanel extends JPanel {
 		}
 	}
 
+	public void clear() {
+		setForeground(p.bg);
+	}
+	
 	public void updateMap() {
 		back = p.getBackend();
 		

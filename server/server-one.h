@@ -1,4 +1,4 @@
-/* server.h
+/* server-one.h
 Header file
 
 Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
@@ -16,18 +16,10 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
    limitations under the License.
 */
 
-#ifndef _SERVER_H
-#define _SERVER_H
+#ifndef _SERVER_ONE_H
+#define _SERVER_ONE_H
 
-#define M_MOVE '\1'
-#define M_START '\2'
-#define M_STATE '\3'
-#define M_DEAD '\4'
-#define M_DISCONNECT '\5'
-#define M_WAIT '\6'
-
-void init_server();
-void *start_server(void *param);
-void stop_server(int id);
+void *start_server_one(void *param);
+void stop_server_one();
 
 #endif

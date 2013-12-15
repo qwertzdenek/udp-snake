@@ -35,19 +35,30 @@ import javax.swing.UnsupportedLookAndFeelException;
 public class Presentation extends JPanel implements ActionListener,
 		KeyListener, WindowListener {
 	private static final long serialVersionUID = 3965225930566059274L;
-	private static DatagramSocket ds = null;
+	private static final int MAX_NAME_LEN = 16;
+
+	// list of top bar items
+	private JComponent[] toolbar;
+	private JLabel bottomLabel;
+	private JButton loginButton;
+
+	// game map
+	private RenderPanel rp;
+	private DefaultListModel<String> listModel;
+	private Backend back;
+	private boolean connected = false;
 
 	public static final int MAX_PAKET_SIZE = 1024;
 
-	private JComponent[] toolbar;
-	private JLabel bottomLabel;
-	private RenderPanel rp;
-	private DefaultListModel<String> listModel;
-	private InetAddress server = InetAddress.getLoopbackAddress();
-	private Backend back;
-	private int port = 10100;
+	// connection socket
+	public DatagramSocket ds = null;
+
+	public InetAddress mainServer = InetAddress.getLoopbackAddress();
+	public int mainPort = 10100;
+	public InetAddress myServer = null;
+	public int myPort = 0;
+
 	
-	protected boolean connected = false;
 
 	private String[] colorStrings = { "White", "Red", "Green", "Blue", "Brown",
 			"Yellow", "Orange", "Purple", "Black", "Grey" };
@@ -58,6 +69,9 @@ public class Presentation extends JPanel implements ActionListener,
 			Color.BLUE, new Color(139, 69, 19), Color.YELLOW, Color.ORANGE,
 			new Color(160, 32, 240), new Color(190, 190, 190) };
 
+	/**
+	 * Packet types. It is first byte of packet.
+	 */
 	public enum PacketType {
 		CONNECT, MOVE, START, STATE, DEAD, DISCONNECT, WAIT;
 
@@ -71,13 +85,14 @@ public class Presentation extends JPanel implements ActionListener,
 			return b;
 		}
 	}
-	
+
 	public Runnable updateMap = new Runnable() {
 		@Override
 		public void run() {
 			listModel.clear();
 			for (int i = 0; i < back.players; i++) {
-				listModel.addElement(back.m_names[i] + " - " + back.m_states[i]);
+				listModel
+						.addElement(back.m_names[i] + " - " + back.m_states[i]);
 			}
 
 			rp.updateMap();
@@ -88,7 +103,6 @@ public class Presentation extends JPanel implements ActionListener,
 	public Runnable wantStart = new Runnable() {
 		@Override
 		public void run() {
-			connected = true;
 			for (JComponent cm : toolbar) {
 				cm.setEnabled(false);
 			}
@@ -107,7 +121,17 @@ public class Presentation extends JPanel implements ActionListener,
 		}
 	};
 
-	public void sendPacket(PacketType t, String aditional) {
+	public Runnable conEst = new Runnable() {
+		
+		@Override
+		public void run() {
+			connected = true;
+			loginButton.setText("Odpojit");
+		}
+	};
+	
+	public void sendPacket(PacketType t, InetAddress mAddress, int mPort,
+			String aditional) {
 		byte[] buffer = new byte[16];
 		int len = 0;
 
@@ -120,30 +144,30 @@ public class Presentation extends JPanel implements ActionListener,
 				String name = in[0];
 				String color = in[1];
 				System.arraycopy(name.getBytes(), 0, buffer, len,
-						Math.min(10, name.length()));
-				len += Math.min(10, name.length()) + 1;
+						Math.min(MAX_NAME_LEN, name.length()));
+				len += Math.min(MAX_NAME_LEN, name.length()) + 1;
 				System.arraycopy(color.getBytes(), 0, buffer, len,
 						color.length());
 				len += color.length() + 1;
 				break;
 			case START:
-
+				// only head
 				break;
 			case MOVE:
 				buffer[len++] = (byte) aditional.charAt(0);
 				break;
 			case DISCONNECT:
-
+				// only head
 				break;
 			case WAIT:
-				
+				// only head
 				break;
 			default:
-
 				break;
 			}
 
-			DatagramPacket send = new DatagramPacket(buffer, len, server, port);
+			DatagramPacket send = new DatagramPacket(buffer, len, mAddress,
+					mPort);
 			ds.send(send);
 
 		} catch (IOException e) {
@@ -153,7 +177,7 @@ public class Presentation extends JPanel implements ActionListener,
 
 	public Presentation() {
 		super();
-		toolbar = new JComponent[4];
+		toolbar = new JComponent[3];
 
 		setFocusable(true);
 		requestFocusInWindow();
@@ -162,7 +186,7 @@ public class Presentation extends JPanel implements ActionListener,
 		JPanel toolPanel = new JPanel();
 		toolPanel.setLayout(new BoxLayout(toolPanel, BoxLayout.X_AXIS));
 		JTextField serverAdress = new JTextField();
-		serverAdress.setText("10.77.96.74:10100");
+		serverAdress.setText("localhost:6000");
 		toolbar[0] = serverAdress;
 		JTextField userName = new JTextField();
 		userName.setText("jmeno");
@@ -171,15 +195,15 @@ public class Presentation extends JPanel implements ActionListener,
 		colors.setSelectedIndex(0);
 		colors.addActionListener(this);
 		toolbar[2] = colors;
-		JButton login = new JButton();
-		login.setText("Přihlásit");
-		toolbar[3] = login;
-		login.addActionListener(this);
+
+		loginButton = new JButton();
+		loginButton.setText("Připojit");
+		loginButton.addActionListener(this);
 
 		toolPanel.add(serverAdress);
 		toolPanel.add(userName);
 		toolPanel.add(colors);
-		toolPanel.add(login);
+		toolPanel.add(loginButton);
 
 		// playground
 		rp = new RenderPanel(this);
@@ -203,83 +227,100 @@ public class Presentation extends JPanel implements ActionListener,
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		if (e.getSource().equals(toolbar[3])) {
-			String address = ((JTextField) toolbar[0]).getText();
-			String name = ((JTextField) toolbar[1]).getText();
-			int color = 50 + ((JComboBox<String>) toolbar[2])
-					.getSelectedIndex();
-
-			String s_name = address.split(":")[0];
-			try {
-				this.port = Integer.parseInt(address.split(":")[1]);
-				this.server = InetAddress.getByName(s_name);
-			} catch (NumberFormatException e2) {
-				JOptionPane.showMessageDialog(this, "Neplatný port");
-				return;
-			} catch (IndexOutOfBoundsException e3) {
-				JOptionPane.showMessageDialog(this,
-						"Pište adresu ve formátu IP:port");
-				return;
-			} catch (UnknownHostException e1) {
-				JOptionPane.showMessageDialog(this, "Server nenalezen");
-				return;
-			}
-
-			try {
-				cleanUp();
-
-				ds = new DatagramSocket();
-
-				back = new Backend(ds, this);
-				back.start();
-
-				Thread.sleep(200);
-			} catch (InterruptedException e1) {
-				e1.printStackTrace();
-			} catch (SocketException e1) {
-				System.out.println("DatagramSocket error");
-			}
-			
-			sendPacket(PacketType.CONNECT, name + "," + color);
-			
-			new Timer().schedule(new TimerTask() {
-				@Override
-				public void run() {
-					if (!connected)
-						JOptionPane.showMessageDialog(getParent(), "Server neodpovídá");
+		if (e.getSource().equals(loginButton)) {
+			if (connected) {
+				sendPacket(PacketType.DISCONNECT, myServer, myPort, null);
+				connected = false;
+				for (JComponent cm : toolbar) {
+					cm.setEnabled(true);
 				}
-			}, 2000);
+				loginButton.setText("Připojit");
+				bottomLabel.setText("Zadejte nové spojení");
+				rp.clear();
+				listModel.clear();
+			} else {
+				String address = ((JTextField) toolbar[0]).getText();
+				String name = ((JTextField) toolbar[1]).getText();
+				if (name.length() == 0) {
+					JOptionPane.showMessageDialog(this, "Prázdné jméno");
+					return;
+				}
+
+				int color = 50 + ((JComboBox<String>) toolbar[2])
+						.getSelectedIndex();
+
+				String s_name = address.split(":")[0];
+				try {
+					mainPort = Integer.parseInt(address.split(":")[1]);
+					mainServer = InetAddress.getByName(s_name);
+				} catch (NumberFormatException e2) {
+					JOptionPane.showMessageDialog(this, "Neplatný port");
+					return;
+				} catch (IndexOutOfBoundsException e3) {
+					JOptionPane.showMessageDialog(this,
+							"Pište adresu ve formátu IP:port (pouze IPv4)");
+					return;
+				} catch (UnknownHostException e1) {
+					JOptionPane.showMessageDialog(this, "Server nenalezen");
+					return;
+				}
+
+				try {
+					cleanUp();
+
+					ds = new DatagramSocket();
+
+					back = new Backend(this);
+					back.start();
+
+				} catch (SocketException e1) {
+					System.out.println("DatagramSocket error");
+				}
+
+				sendPacket(PacketType.CONNECT, mainServer, mainPort, name + ","
+						+ color);
+
+				new Timer().schedule(new TimerTask() {
+					@Override
+					public void run() {
+						if (!connected)
+							JOptionPane.showMessageDialog(getParent(),
+									"Server neodpovídá");
+					}
+				}, 2000);
+			}
 		}
 	}
 
 	@Override
 	public void keyPressed(KeyEvent arg0) {
+		if (!connected)
+			return;
+
 		int kc = arg0.getKeyCode();
 
 		if (kc == KeyEvent.VK_SPACE) {
-			sendPacket(PacketType.START, null);
+			sendPacket(PacketType.START, myServer, myPort, null);
 			bottomLabel.setText("Hra");
 		} else if (kc == KeyEvent.VK_KP_LEFT || kc == KeyEvent.VK_LEFT) {
-			sendPacket(PacketType.MOVE, "L");
+			sendPacket(PacketType.MOVE, myServer, myPort, "L");
 		} else if (kc == KeyEvent.VK_KP_RIGHT || kc == KeyEvent.VK_RIGHT) {
-			sendPacket(PacketType.MOVE, "R");
+			sendPacket(PacketType.MOVE, myServer, myPort, "R");
 		} else if (kc == KeyEvent.VK_KP_UP || kc == KeyEvent.VK_UP) {
-			sendPacket(PacketType.MOVE, "T");
+			sendPacket(PacketType.MOVE, myServer, myPort, "T");
 		} else if (kc == KeyEvent.VK_KP_DOWN || kc == KeyEvent.VK_DOWN) {
-			sendPacket(PacketType.MOVE, "D");
+			sendPacket(PacketType.MOVE, myServer, myPort, "D");
 		}
 	}
 
 	@Override
 	public void keyReleased(KeyEvent arg0) {
-		// TODO Auto-generated method stub
-
+		// not used
 	}
 
 	@Override
 	public void keyTyped(KeyEvent arg0) {
-		// TODO Auto-generated method stub
-
+		// not used
 	}
 
 	public Backend getBackend() {
@@ -290,11 +331,17 @@ public class Presentation extends JPanel implements ActionListener,
 		try {
 			if (back != null && back.isAlive()) {
 				back.listenStop();
-				sendPacket(PacketType.DISCONNECT, null);
+				sendPacket(PacketType.DISCONNECT, myServer, myPort, null);
+				ds.close();
 				ds.close();
 				back.join();
-			} else if (ds != null) {
-				ds.close();
+			} else {
+				if (ds != null) {
+					ds.close();
+				}
+				if (ds != null) {
+					ds.close();
+				}
 			}
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -340,8 +387,6 @@ public class Presentation extends JPanel implements ActionListener,
 				createAndShowGUI();
 			}
 		});
-
-		System.out.println("Client is now starting");
 	}
 
 	@Override
