@@ -3,7 +3,7 @@
 CC=gcc
 LD=ld
 LDFLAGS=-lc -pthread
-CFLAGS=-pedantic -Wall -O2 -std=gnu99
+CFLAGS=-g -pedantic -Wall -O2 -std=gnu99
 
 all:	clean server
 

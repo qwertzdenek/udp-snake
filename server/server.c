@@ -28,8 +28,11 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #define BUFFER_LEN 16
 
 int sockfd[MAX_PLAYERS]; /**< server file descriptors */
-int listening[MAX_PLAYERS];
+int listening[MAX_PLAYERS]; /**<  */
 
+/**
+ * Initialize used arrays. Run before any pthread_create.
+ */
 void init_server()
 {
    memset((void *) &sockfd, 0, MAX_PLAYERS*sizeof(int));
@@ -37,7 +40,8 @@ void init_server()
 }
 
 /**
- * \brief server user input listen loop
+ * server user input listen loop
+ * \param param cast to the struct con_info and fill with connection info.
  */
 void *start_server(void *param)
 {
@@ -80,6 +84,7 @@ void *start_server(void *param)
    {
       n = recvfrom(sockfd[uid], &buffer, BUFFER_LEN, 0, (struct sockaddr *) &client_address, (socklen_t *) &client_len );
       
+      // not from our client?
       if (n < 0 || client_address.sin_addr.s_addr != uaddr || client_address.sin_port != uport)
          continue;
       
@@ -99,15 +104,17 @@ void *start_server(void *param)
             break;
       }
    }
-   
-   // disconnect our client
-   //ch = M_DISCONNECT;
-   //sendto(sockfd[uid], &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
 
-   //printf("(I) Client thread %d is exiting\n", uid);
+   // disconnect our client
+   ch = M_DISCONNECT;
+   sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
+
    pthread_exit(NULL);
 }
 
+/**
+ * Shutdown one thread loop and free the socket file descriptor.
+ */
 void stop_server(int id)
 {
    listening[id] = 0;

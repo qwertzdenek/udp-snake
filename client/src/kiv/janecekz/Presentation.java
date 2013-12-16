@@ -1,3 +1,21 @@
+/* Presentation.java
+
+UDP Snake
+Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package kiv.janecekz;
 
 import java.awt.BorderLayout;
@@ -32,6 +50,9 @@ import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 
+/**
+ * Game window. Reads input data from the user and sends them to the server.
+ */
 public class Presentation extends JPanel implements ActionListener,
 		KeyListener, WindowListener {
 	private static final long serialVersionUID = 3965225930566059274L;
@@ -91,8 +112,7 @@ public class Presentation extends JPanel implements ActionListener,
 		public void run() {
 			listModel.clear();
 			for (int i = 0; i < back.players; i++) {
-				listModel
-						.addElement(back.m_names[i] + " - " + back.m_states[i]);
+				listModel.addElement(back.m_names[i] + " - " + back.m_states[i]);
 			}
 
 			rp.updateMap();
@@ -134,6 +154,9 @@ public class Presentation extends JPanel implements ActionListener,
 			String aditional) {
 		byte[] buffer = new byte[16];
 		int len = 0;
+		
+		if (mAddress == null)
+			return;
 
 		try {
 			buffer[len++] = (byte) t.getSymbol();
@@ -186,7 +209,7 @@ public class Presentation extends JPanel implements ActionListener,
 		JPanel toolPanel = new JPanel();
 		toolPanel.setLayout(new BoxLayout(toolPanel, BoxLayout.X_AXIS));
 		JTextField serverAdress = new JTextField();
-		serverAdress.setText("localhost:6000");
+		serverAdress.setText("localhost:9700");
 		toolbar[0] = serverAdress;
 		JTextField userName = new JTextField();
 		userName.setText("jmeno");

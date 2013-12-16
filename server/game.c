@@ -226,12 +226,12 @@ void load_map(char *name)
       switch (c)
       {
       case '#':
-         skel_map.map_matrix[i][j] = 11;
+         skel_map.map_matrix[i][j] = MAX_PLAYERS + 1;
          printf("#");
          break;
 
       case ' ':
-         skel_map.map_matrix[i][j] = 13;
+         skel_map.map_matrix[i][j] = MAX_PLAYERS + 3;
          printf("-");
          break;
       }
@@ -540,7 +540,7 @@ void want_be_alive(int id)
 
 /**
  * Returns first free id to `players` array
- * \return id or -1 when player was not found
+ * \return id or -1 when player id was not found
  */
 int find_id()
 {
@@ -672,7 +672,7 @@ void spawn_fruit()
             randx = rand() % act_map.width;
             randy = rand() % act_map.height;
          }
-         while (act_map.map_matrix[randy][randx] != 13);
+         while (act_map.map_matrix[randy][randx] != MAX_PLAYERS + 3);
 
          fruits[i] = randy;
          fruits[i + 1] = randx;
@@ -703,7 +703,7 @@ void spawn_player(snake_t *p)
    srand (time(NULL));
    rand_dir = rand() % 4;
 
-   p->hposx = act_map.width / 2; // TODO: place somewhere better
+   p->hposx = act_map.width / 2;
    p->hposy = act_map.height / 2;
 
    switch (rand_dir)
@@ -859,9 +859,6 @@ int run()
    memset((void *) players, 0, MAX_PLAYERS*sizeof(snake_t *));
    memset((void *) &clients, 0, MAX_PLAYERS*sizeof(pthread_t));
 
-   // TODO: warmup
-   // sleep(10);
-
    game = 1;
    fruit_counter = FRUIT_TIME;
 
@@ -940,6 +937,9 @@ int run()
             info->addr = address;
             info->port = port;
             
+            sin_addr.s_addr = address;
+            printf( "Connected player %d %s, color %d and address %s:%d\n", rc, pl_name, pl_color, inet_ntoa(sin_addr), ntohs(port));
+            
             // initialize server thread
             rc = pthread_create(&clients[rc], NULL, start_server, (void *) info);
             if (rc)
@@ -948,9 +948,6 @@ int run()
                free(info);
                want_rem_player(rc);
             }
-            
-            sin_addr.s_addr = address;
-            printf( "Connected player %s, color %d and address %s:%d\n", pl_name, pl_color, inet_ntoa(sin_addr), ntohs(port));
          }
       }
 
@@ -959,11 +956,6 @@ int run()
       //sleep(2);
    }
 
-   pthread_attr_destroy(&attr);
-   stop_server_one();
-   shutdown(server_sockfd, SHUT_RDWR);
-   close(server_sockfd);
-   
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (players[i] != NULL)
@@ -973,6 +965,11 @@ int run()
          pthread_detach(clients[i]);
       }
    }
+   
+   pthread_attr_destroy(&attr);
+   stop_server_one();
+   shutdown(server_sockfd, SHUT_RDWR);
+   close(server_sockfd);
    return 0;
 }
 

@@ -1,3 +1,21 @@
+/* Backend.java
+
+UDP Snake
+Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+*/
+
 package kiv.janecekz;
 
 import java.io.IOException;
@@ -6,16 +24,23 @@ import java.util.StringTokenizer;
 
 import kiv.janecekz.Presentation.PacketType;
 
+/**
+ * Datagram Socket backend thread. It waits for the packet from the server
+ * and delegates changes to the Presentation thread.
+ */
 public class Backend extends Thread {
-	public static final int MAX_PLAYERS = 10;
+	public static final int MAX_PLAYERS = 16;
 
+	/**
+	 * loaded map data
+	 */
 	public byte[] mapData;
-	public int m_width;
-	public int m_height;
-	public int players;
-	public String[] m_names;
-	public int[] m_colors;
-	public int[] m_states;
+	public int m_width;  // map width
+	public int m_height; // map height
+	public int players;  // count of players
+	public String[] m_names; // player names
+	public int[] m_colors; // player colors
+	public int[] m_states; // player score
 
 	private boolean listening = true;
 	private final Presentation p;
@@ -30,6 +55,9 @@ public class Backend extends Thread {
 		m_states = new int[MAX_PLAYERS];
 	}
 
+	/**
+	 * Breaks the thread loop.
+	 */
 	public synchronized void listenStop() throws InterruptedException {
 		listening = false;
 	}

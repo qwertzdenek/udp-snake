@@ -21,8 +21,8 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 
 #include <netinet/in.h>
 
-#define SNAKE_NAME_LEN 8
-#define MAX_PLAYERS 10
+#define SNAKE_NAME_LEN 16
+#define MAX_PLAYERS 16
 
 #define TOP 'T'
 #define LEFT 'L'
