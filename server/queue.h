@@ -20,10 +20,10 @@
 
 typedef struct
 {
-   char *name;
-   int color;
-   in_addr_t address;
-   uint16_t port;
+   char *name;  // username
+   int color;   // player color
+   in_addr_t address;  // user IP address
+   uint16_t port;      // port number
 } node_t;
 
 typedef struct

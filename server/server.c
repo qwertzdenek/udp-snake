@@ -28,7 +28,7 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #define BUFFER_LEN 16
 
 int sockfd[MAX_PLAYERS]; /**< server file descriptors */
-int listening[MAX_PLAYERS]; /**<  */
+int listening[MAX_PLAYERS]; /**< array of loop conditions */
 
 /**
  * Initialize used arrays. Run before any pthread_create.

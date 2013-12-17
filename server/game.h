@@ -41,8 +41,11 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #define C_BLACK 58
 #define C_GREY 59
 
+/**
+ * Stores one connection info when requesting new thread.
+ */
 struct con_info {
-   int uid;
+   int uid;        // user ID
    in_addr_t addr;
    in_port_t port;
 };

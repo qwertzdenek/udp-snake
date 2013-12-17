@@ -16,6 +16,10 @@
 
 #include "queue.h"
 
+/**
+ * Initialize used arrays in this queue
+ * \param mq queue structure to process
+ */
 void init_queue(queue_t *mq)
 {
    mq->first = 0;
@@ -23,6 +27,14 @@ void init_queue(queue_t *mq)
    mq->count = 0;
 }
 
+/**
+ * Insert one node to the queue.
+ * \param mq structure to process
+ * \param name gived string to safe
+ * \param color gived int to save
+ * \param address IP address in in_addr_t format
+ * \param port port int in_port_t format
+ */
 void enqueue(queue_t *mq, char *name, int color, in_addr_t address, uint16_t port)
 {
    node_t *node;
@@ -41,6 +53,14 @@ void enqueue(queue_t *mq, char *name, int color, in_addr_t address, uint16_t por
    }
 }
 
+/**
+ * Retreive one node from the queue.
+ * \param mq structure to process
+ * \param name gived string to load
+ * \param color gived int to load
+ * \param address IP address in in_addr_t format
+ * \param port port int in_port_t format
+ */
 void dequeue(queue_t *mq, char **p_name, int *p_color, in_addr_t *address, uint16_t *port)
 {
    node_t *node;
@@ -58,6 +78,11 @@ void dequeue(queue_t *mq, char **p_name, int *p_color, in_addr_t *address, uint1
    }
 }
 
+/**
+ * Tests for the empty queue
+ * \param mq queue to process
+ * \return 1 if queue is empty and 0 afterwards 
+ */
 int empty(queue_t *mq)
 {
    if (mq->count <= 0) return (true);

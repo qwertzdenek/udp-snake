@@ -134,8 +134,8 @@ typedef struct
 int server_sockfd;  /**< server socket */
 in_port_t sport; /**< actual server port */
 struct in_addr saddress; /**< actual server address */
-map_t skel_map; /**< holds skeleton map */
-map_t act_map; /**< holds actual map */
+map_t skel_map; /**< holds skeleton map structure */
+map_t act_map; /**< holds actual map structure */
 char *map = NULL; /**< filename of actual map */
 int game = 0; /**< true if game is running */
 queue_t add_requests; /**< client requests */
@@ -196,6 +196,7 @@ void load_map(char *name)
    i = 0;
    j = 0;
 
+   // parse width and height
    fgets((char *) basename, 3, f);
    width = atoi((char *) basename);
    fseek(f, 1L, SEEK_CUR);

@@ -32,7 +32,8 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 int main_listening = 1;
 
 /**
- * \brief server user input listen loop
+ * server user input listen loop
+ * \param not used
  */
 void *start_server_one(void *param)
 {
@@ -73,6 +74,9 @@ void *start_server_one(void *param)
    pthread_exit(NULL);
 }
 
+/**
+ * Breaks main thread loop.
+ */
 void stop_server_one()
 {
    main_listening = 0;
