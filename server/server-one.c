@@ -42,10 +42,15 @@ void *start_server_one(void *param)
    char *name;
    char *ptr;
    uint16_t color;
+   struct sockaddr_in sin;
+   socklen_t len = sizeof(sin);
+
+   if (getsockname(server_sockfd, (struct sockaddr *) &sin, &len) == -1)
+      perror("getsockname");
+   else
+      printf("Running main server on %s:%d\n", inet_ntoa(sin.sin_addr), ntohs(sin.sin_port));
 
    client_len = sizeof(client_address);
-
-   printf("Running main server on %s:%d\n", inet_ntoa(saddress), ntohs(sport));
 
    while (main_listening)
    {
