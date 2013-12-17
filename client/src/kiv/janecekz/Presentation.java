@@ -251,6 +251,7 @@ public class Presentation extends JPanel implements ActionListener,
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(loginButton)) {
+	        requestFocus();
 			if (connected) {
 				sendPacket(PacketType.DISCONNECT, myServer, myPort, null);
 				connected = false;
@@ -259,7 +260,6 @@ public class Presentation extends JPanel implements ActionListener,
 				}
 				loginButton.setText("Připojit");
 				bottomLabel.setText("Zadejte nové spojení");
-				rp.clear();
 				listModel.clear();
 			} else {
 				String address = ((JTextField) toolbar[0]).getText();
