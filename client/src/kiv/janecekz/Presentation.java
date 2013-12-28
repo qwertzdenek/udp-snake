@@ -68,6 +68,7 @@ public class Presentation extends JPanel implements ActionListener,
 	private DefaultListModel<String> listModel;
 	private Backend back;
 	private boolean connected = false;
+	private Timer conTimer;
 
 	public static final int MAX_PAKET_SIZE = 1024;
 
@@ -107,6 +108,9 @@ public class Presentation extends JPanel implements ActionListener,
 		}
 	}
 
+	/**
+	 * Asynchronous task from the Backend to update map data
+	 */
 	public Runnable updateMap = new Runnable() {
 		@Override
 		public void run() {
@@ -120,6 +124,9 @@ public class Presentation extends JPanel implements ActionListener,
 		}
 	};
 
+	/**
+	 * Backend task to indicate connected server.
+	 */
 	public Runnable wantStart = new Runnable() {
 		@Override
 		public void run() {
@@ -130,6 +137,9 @@ public class Presentation extends JPanel implements ActionListener,
 		}
 	};
 
+	/**
+	 * Disconnects us.
+	 */
 	public Runnable disconnect = new Runnable() {
 		@Override
 		public void run() {
@@ -141,15 +151,26 @@ public class Presentation extends JPanel implements ActionListener,
 		}
 	};
 
+	/**
+	 * Executed when was received confirmation packet from the server.
+	 */
 	public Runnable conEst = new Runnable() {
 		
 		@Override
 		public void run() {
 			connected = true;
 			loginButton.setText("Odpojit");
+			loginButton.setEnabled(true);
 		}
 	};
 	
+	/**
+	 * Sends packet to the target system.
+	 * @param t type of the packet
+	 * @param mAddress destination address
+	 * @param mPort destination port
+	 * @param aditional additional informations
+	 */
 	public void sendPacket(PacketType t, InetAddress mAddress, int mPort,
 			String aditional) {
 		byte[] buffer = new byte[16];
@@ -246,6 +267,8 @@ public class Presentation extends JPanel implements ActionListener,
 		add(bottomLabel, BorderLayout.PAGE_END);
 
 		addKeyListener(this);
+		
+		conTimer = new Timer();
 	}
 
 	@Override
@@ -261,6 +284,7 @@ public class Presentation extends JPanel implements ActionListener,
 				loginButton.setText("Připojit");
 				bottomLabel.setText("Zadejte nové spojení");
 				listModel.clear();
+				conTimer.purge();
 			} else {
 				String address = ((JTextField) toolbar[0]).getText();
 				String name = ((JTextField) toolbar[1]).getText();
@@ -302,15 +326,19 @@ public class Presentation extends JPanel implements ActionListener,
 
 				sendPacket(PacketType.CONNECT, mainServer, mainPort, name + ","
 						+ color);
-
-				new Timer().schedule(new TimerTask() {
+				
+				loginButton.setEnabled(false);
+				
+				conTimer.schedule(new TimerTask() {
 					@Override
 					public void run() {
-						if (!connected)
+						if (!connected) {
 							JOptionPane.showMessageDialog(getParent(),
 									"Server neodpovídá");
+							loginButton.setEnabled(true);
+						}
 					}
-				}, 2000);
+				}, 400);
 			}
 		}
 	}
@@ -350,24 +378,22 @@ public class Presentation extends JPanel implements ActionListener,
 		return back;
 	}
 
+	/**
+	 * Cleans up actual connection
+	 */
 	public void cleanUp() {
 		try {
 			if (back != null && back.isAlive()) {
 				back.listenStop();
 				sendPacket(PacketType.DISCONNECT, myServer, myPort, null);
 				ds.close();
-				ds.close();
 				back.join();
-			} else {
-				if (ds != null) {
-					ds.close();
-				}
-				if (ds != null) {
-					ds.close();
-				}
+				ds = null;
+			} else if (ds != null) {
+			    ds.close();
 			}
 		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
+		    // it should not happen
 			e.printStackTrace();
 		}
 	}

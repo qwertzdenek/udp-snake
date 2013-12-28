@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="jar" name="Snake">
+    <target name="init">
+      <mkdir dir="build/classes" />
+      <mkdir dir="dist" />
+    </target>
+    <target name="compile" depends="init">
+      <javac srcdir="src" destdir="build/classes" />
+    </target>
+    <target name="jar" depends="compile">
+      <jar destfile="dist/snake-client.jar" basedir="build/classes">
+         <manifest>
+            <attribute name="Main-Class" value="kiv.janecekz.Presentation"/>
+         </manifest>
+         <fileset dir="build/classes" includes="*.class"/> 
+      </jar>
+    </target>
+</project>

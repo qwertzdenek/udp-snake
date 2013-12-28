@@ -23,6 +23,7 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 
 #define SNAKE_NAME_LEN 16
 #define MAX_PLAYERS 16
+#define GAME_SPEED 200000
 
 #define TOP 'T'
 #define LEFT 'L'

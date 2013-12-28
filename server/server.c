@@ -78,7 +78,9 @@ void *start_server(void *param)
    sendto(sockfd[uid], &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
    
    listening[uid] = 1;
-   //printf("(I) Client thread %d is starting\n", uid);
+   #ifdef DEBUG
+   printf("(I) Client thread %d is starting\n", uid);
+   #endif
    
    while (listening[uid])
    {

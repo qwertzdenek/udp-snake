@@ -43,6 +43,7 @@ you can play it with your friends over the network.
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <errno.h>
 #include <signal.h>
 #include <unistd.h>
@@ -163,7 +164,7 @@ void load_map(char *name)
 {
    char basename[20];
    char *ext;
-   char c;
+   char c = ' ';
    FILE *f;
    int i, j;
    int width, height;
@@ -341,7 +342,7 @@ void rasterize_act_map()
    int i, j;
    int coordx, coordy;
 
-   // copy skeleton to act_map
+   // copy empty skeleton to act_map
    memcpy((void *) &act_map.map_matrix, (void *) &skel_map.map_matrix, sizeof(int)*MAP_W*act_map.height);
 
    for (i = 0; i < MAX_PLAYERS; i++)
@@ -482,7 +483,9 @@ void want_move(int id, int dir)
    if (id < 0)
       return;
 
-   //printf("Want to move player %d to %c (playing %d)\n", id, dir, playing[id]);
+   #ifdef DEBUG
+   printf("Want to move player %d to %c (playing %d)\n", id, dir, playing[id]);
+   #endif
    directions[id] = dir;
 }
 
@@ -821,7 +824,7 @@ int run()
 
    init_queue(&add_requests);
    init_server();
-
+   
    // INITIALIZE main server socket
    server_sockfd = socket(AF_INET, SOCK_DGRAM, 0);
    server_address.sin_family = AF_INET;
@@ -907,7 +910,9 @@ int run()
             
             if (playing[i] == 0)
             {
-               //printf("** player %d is dead\n", i);
+               #ifdef DEBUG
+               printf("** player %d is dead\n", i);
+               #endif
                playing[i] = 2; // wait for response
                ch = M_DEAD;
                sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
@@ -953,19 +958,22 @@ int run()
       }
 
       memset(directions, NONE, MAX_PLAYERS);
-      usleep(300000);
-      //sleep(2);
+      usleep(GAME_SPEED);
    }
 
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (players[i] != NULL)
       {
-         //printf("detach %d, clinent ID %d\n", i, (unsigned)clients[i]);
+         #ifdef DEBUG
+         printf("detach %d, client ID %d\n", i, (unsigned)clients[i]);
+         #endif
          stop_server(i);
          pthread_detach(clients[i]);
       }
    }
+   
+   sleep(1);
    
    pthread_attr_destroy(&attr);
    stop_server_one();
@@ -994,6 +1002,24 @@ void clean_while_parse(char **map, char *message)
 }
 
 /**
+ * Tests wheather string s contains number
+ * \param s string to test
+ */
+int is_num(char *s)
+{
+   int res = 1;
+   char *ptr = s;
+   
+   while (*ptr != 0)
+   {
+      res &= isdigit((char) *ptr) > 0 ? 1 : 0;
+      ptr++;
+   }
+   
+   return res;
+}
+
+/**
  * main function
  */
 int main(int argc, char *argv[])
@@ -1002,11 +1028,12 @@ int main(int argc, char *argv[])
    int i;
    struct addrinfo *saddr;
    struct addrinfo hints;
+   char *eptr;
    
    memset(&hints, 0, sizeof(struct addrinfo));
    hints.ai_family = AF_INET;
    saddress.s_addr = INADDR_ANY;
-   sport = 0;
+   sport = htons(9700);
    
    signal(SIGINT, end);
 
@@ -1038,8 +1065,8 @@ int main(int argc, char *argv[])
       {
          if (i < argc - 1)
          {
-            sport = atoi(argv[i + 1]);
-            if (sport < 0 || sport > 65535)
+			sport = (int) strtol(argv[i + 1], &eptr, 10);
+            if (argv[i + 1] == eptr || sport < 0 || sport > 65535)
             {
                clean_while_parse(&map, "(EE) Wrong port");
                return 1;
@@ -1056,6 +1083,12 @@ int main(int argc, char *argv[])
             if (res < 0)
             {
                clean_while_parse(&map, "(EE) Error while parsing address");
+               return 1;
+            }
+            
+            if (is_num(argv[i + 1]))
+            {
+               clean_while_parse(&map, "(EE) Not valid IP address");
                return 1;
             }
             

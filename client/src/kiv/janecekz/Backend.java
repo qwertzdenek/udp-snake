@@ -68,20 +68,19 @@ public class Backend extends Thread {
 
 		Presentation.PacketType t;
 
-		// receive STATUS, DEAD, DISCONNECT
+		// receive STATUS, DEAD, DISCONNECT, START
 
 		DatagramPacket recv = new DatagramPacket(buffer, buffer.length);
 		while (listening) {
 			try {
 				p.ds.receive(recv);
 			} catch (IOException e) {
-				//System.out.println("Neplatný socket");
 				break;
 			}
 			t = PacketType.values()[buffer[0]];
 
 			switch (t) {
-			case STATE:
+			case STATE:  // new game state
 				String inData = new String(buffer, 2, recv.getLength() - 2);
 				StringTokenizer token = new StringTokenizer(inData, "\0");
 				players = buffer[1];
@@ -100,15 +99,15 @@ public class Backend extends Thread {
 
 				javax.swing.SwingUtilities.invokeLater(p.updateMap);
 				break;
-			case DEAD:
+			case DEAD: // we are dead
 				p.sendPacket(PacketType.WAIT, p.myServer, p.myPort, null);
 				javax.swing.SwingUtilities.invokeLater(p.wantStart);
 				break;
-			case DISCONNECT:
+			case DISCONNECT: // We are disconnect
 				javax.swing.SwingUtilities.invokeLater(p.disconnect);
 				listening = false;
 				break;
-			case START:
+			case START: // Connection established
 				javax.swing.SwingUtilities.invokeLater(p.conEst);
 				p.myServer = recv.getAddress();
 				p.myPort = recv.getPort();
@@ -117,7 +116,5 @@ public class Backend extends Thread {
 				break;
 			}
 		}
-
-		//System.out.println("Backend thread exiting");
 	}
 }
