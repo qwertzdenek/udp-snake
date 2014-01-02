@@ -816,7 +816,7 @@ int run()
 
    if (map_file == NULL)
    {
-      printf("(E) Map %s not found", map);
+      printf("(E) Map %s not found\n", map);
       return 1;
    }
    else

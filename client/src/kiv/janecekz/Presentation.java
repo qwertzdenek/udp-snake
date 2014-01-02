@@ -138,7 +138,7 @@ public class Presentation extends JPanel implements ActionListener,
 	};
 
 	/**
-	 * Disconnects us.
+	 * Disconnects us enables components.
 	 */
 	public Runnable disconnect = new Runnable() {
 		@Override
@@ -169,11 +169,11 @@ public class Presentation extends JPanel implements ActionListener,
 	 * @param t type of the packet
 	 * @param mAddress destination address
 	 * @param mPort destination port
-	 * @param aditional additional informations
+	 * @param aditional additional informations like username
 	 */
 	public void sendPacket(PacketType t, InetAddress mAddress, int mPort,
 			String aditional) {
-		byte[] buffer = new byte[16];
+		byte[] buffer = new byte[22];
 		int len = 0;
 		
 		if (mAddress == null)
@@ -185,14 +185,13 @@ public class Presentation extends JPanel implements ActionListener,
 			switch (t) {
 			case CONNECT:
 				String[] in = aditional.split(",");
-				String name = in[0];
-				String color = in[1];
-				System.arraycopy(name.getBytes(), 0, buffer, len,
-						Math.min(MAX_NAME_LEN, name.length()));
-				len += Math.min(MAX_NAME_LEN, name.length()) + 1;
-				System.arraycopy(color.getBytes(), 0, buffer, len,
-						color.length());
-				len += color.length() + 1;
+				byte[] name = in[0].getBytes("UTF-8");
+				byte[] color = in[1].getBytes();
+				System.arraycopy(name, 0, buffer, len,
+						Math.min(MAX_NAME_LEN, name.length));
+				len += Math.min(MAX_NAME_LEN, name.length) + 1;
+				System.arraycopy(color, 0, buffer, len, color.length);
+				len += color.length + 1;
 				break;
 			case START:
 				// only head
