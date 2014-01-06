@@ -567,7 +567,7 @@ int find_id()
 void print_map(map_t *m)
 {
    int i, j;
-   char c;
+   char c = ' ';
 
    printf("map %s (%d, %d)\n", m->map_name, m->height, m->width);
 
