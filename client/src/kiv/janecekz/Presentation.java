@@ -270,7 +270,8 @@ public class Presentation extends JPanel implements ActionListener,
 		conTimer = new Timer();
 	}
 
-	@Override
+	@SuppressWarnings("unchecked")
+    @Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource().equals(loginButton)) {
 	        requestFocus();
