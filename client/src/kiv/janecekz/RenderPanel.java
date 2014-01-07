@@ -88,10 +88,16 @@ public class RenderPanel extends JPanel {
 		}
 	}
 
+   /**
+    * Clears actual map.
+    */
 	public void clear() {
 		setForeground(p.bg);
 	}
 	
+   /**
+    * Fetch accepted data.
+    */
 	public void updateMap() {
 		back = p.getBackend();
 		

@@ -960,7 +960,7 @@ int run()
       memset(directions, NONE, MAX_PLAYERS);
       usleep(GAME_SPEED);
    }
-
+   
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (players[i] != NULL)
