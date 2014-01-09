@@ -1029,6 +1029,7 @@ int main(int argc, char *argv[])
    struct addrinfo *saddr;
    struct addrinfo hints;
    char *eptr;
+   long lport;
    
    memset(&hints, 0, sizeof(struct addrinfo));
    hints.ai_family = AF_INET;
@@ -1065,13 +1066,13 @@ int main(int argc, char *argv[])
       {
          if (i < argc - 1)
          {
-			sport = (int) strtol(argv[i + 1], &eptr, 10);
-            if (argv[i + 1] == eptr || sport < 0 || sport > 65535)
+			lport = strtol(argv[i + 1], &eptr, 10);
+            if (argv[i + 1] == eptr || lport < 0 || lport > 65535)
             {
                clean_while_parse(&map, "(EE) Wrong port");
                return 1;
             }
-            sport = htons(sport);
+            sport = htons((uint16_t) lport);
             i++;
          }
       }
@@ -1100,6 +1101,7 @@ int main(int argc, char *argv[])
       else
       {
          clean_while_parse(&map, "(EE) Wrong arguments");
+         help();
          return 1;
       }
    }
