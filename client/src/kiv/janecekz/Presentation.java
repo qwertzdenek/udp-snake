@@ -82,14 +82,14 @@ public class Presentation extends JPanel implements ActionListener,
 
 	
 
-	private String[] colorStrings = { "White", "Red", "Green", "Blue", "Brown",
+	private String[] colorStrings = { "Red", "Green", "Blue", "Brown",
 			"Yellow", "Orange", "Purple", "Black", "Grey" };
 
 	public Color bg = new Color(238, 229, 222);
 
-	public Color[] awtColors = { Color.WHITE, Color.RED, Color.GREEN,
+	public Color[] awtColors = { Color.RED, Color.GREEN,
 			Color.BLUE, new Color(139, 69, 19), Color.YELLOW, Color.ORANGE,
-			new Color(160, 32, 240), new Color(190, 190, 190) };
+			new Color(160, 32, 240), Color.BLACK, new Color(190, 190, 190) };
 
 	/**
 	 * Packet types. It is first byte of packet.
@@ -148,6 +148,9 @@ public class Presentation extends JPanel implements ActionListener,
 				cm.setEnabled(true);
 			}
 			bottomLabel.setText("Server ukončil spojení");
+			loginButton.setText("Připojit");
+			listModel.clear();
+			rp.clear();
 		}
 	};
 

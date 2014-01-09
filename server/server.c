@@ -106,13 +106,7 @@ void *start_server(void *param)
             break;
       }
    }
-
-   // disconnect our client
-   ch = M_DISCONNECT;
-   client_address.sin_addr.s_addr = uaddr;
-   client_address.sin_port = uport;
-   sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
-
+   
    pthread_exit(NULL);
 }
 

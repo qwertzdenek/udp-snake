@@ -51,7 +51,8 @@ public class RenderPanel extends JPanel {
 		super.paintComponent(g);
 		
 		if (mapData == null) {
-			setForeground(p.bg);
+		    g.setColor(p.bg);
+            g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 			return;
 		}
 		
@@ -92,7 +93,8 @@ public class RenderPanel extends JPanel {
     * Clears actual map.
     */
 	public void clear() {
-		setForeground(p.bg);
+		mapData = null;
+		repaint();
 	}
 	
    /**

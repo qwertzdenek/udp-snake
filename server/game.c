@@ -744,7 +744,7 @@ int add_player(char *name, int color, in_addr_t address, uint16_t port)
    // find player with the same name
    for (i = 0; i < MAX_PLAYERS; i++)
    {
-      if (players[i] != NULL && !strcmp(name, players[i]->name))
+      if (players[i] != NULL && (!strcmp(name, players[i]->name) || color == players[i]->color))
       {
          return -1;
       }
@@ -848,7 +848,7 @@ int run()
 
    /* Initialize and set thread detached attribute */
    pthread_attr_init(&attr);
-   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
    
    // initialize main server thread
    rc = pthread_create(&listener, &attr, start_server_one, NULL);
@@ -887,7 +887,7 @@ int run()
                playing[i] = 0;
                
                stop_server(i);
-               pthread_detach(clients[i]);
+               pthread_join(clients[i], NULL);
             }
          }
       }
@@ -947,7 +947,7 @@ int run()
             printf( "Connected player %d %s, color %d and address %s:%d\n", rc, pl_name, pl_color, inet_ntoa(sin_addr), ntohs(port));
             
             // initialize server thread
-            rc = pthread_create(&clients[rc], NULL, start_server, (void *) info);
+            rc = pthread_create(&clients[rc], &attr, start_server, (void *) info);
             if (rc)
             {
                printf("(E) return code from pthread_create() is %d\n", rc);
@@ -961,24 +961,33 @@ int run()
       usleep(GAME_SPEED);
    }
    
+   pthread_attr_destroy(&attr);
+   
    for (i = 0; i < MAX_PLAYERS; i++)
    {
       if (players[i] != NULL)
       {
-         #ifdef DEBUG
-         printf("detach %d, client ID %d\n", i, (unsigned)clients[i]);
-         #endif
          stop_server(i);
-         pthread_detach(clients[i]);
+         pthread_join(clients[i], NULL);
+         
+         // disconnect our client
+         ch = M_DISCONNECT;
+         client_address.sin_addr.s_addr = players[i]->address;
+         client_address.sin_port = players[i]->port;
+         sendto(server_sockfd, &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
+         
+         #ifdef DEBUG
+         printf("removed %d, client ID %d\n", i, (unsigned)clients[i]);
+         #endif
       }
    }
    
    sleep(1);
    
-   pthread_attr_destroy(&attr);
    stop_server_one();
    shutdown(server_sockfd, SHUT_RDWR);
    close(server_sockfd);
+   pthread_join(listener, NULL);
    return 0;
 }
 

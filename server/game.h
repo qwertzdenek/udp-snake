@@ -31,16 +31,15 @@ Copyright 2013 Zdeněk Janeček (ycdmdj@gmail.com)
 #define RIGHT 'R'
 #define NONE 'N'
 
-#define C_WHITE 50
-#define C_RED 51
-#define C_GREEN 52
-#define C_BLUE 53
-#define C_BROWN 54
-#define C_YELLOW 55
-#define C_ORANGE 56
-#define C_PURPLE 57
-#define C_BLACK 58
-#define C_GREY 59
+#define C_RED 50
+#define C_GREEN 51
+#define C_BLUE 52
+#define C_BROWN 53
+#define C_YELLOW 54
+#define C_ORANGE 55
+#define C_PURPLE 56
+#define C_BLACK 57
+#define C_GREY 58
 
 /**
  * Stores one connection info when requesting new thread.
