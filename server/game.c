@@ -981,9 +981,7 @@ int run()
          #endif
       }
    }
-   
-   sleep(1);
-   
+
    stop_server_one();
    shutdown(server_sockfd, SHUT_RDWR);
    close(server_sockfd);

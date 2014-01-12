@@ -58,6 +58,7 @@ void *start_server(void *param)
    free(param);
    
    sockfd[uid] = socket(AF_INET, SOCK_DGRAM, 0);
+   
    server_address.sin_family = AF_INET;
    server_address.sin_addr = saddress;
    server_address.sin_port = 0;
@@ -70,12 +71,18 @@ void *start_server(void *param)
       pthread_exit(NULL);
    }
    
-   client_len = sizeof(client_address);
+   client_address.sin_family = AF_INET;
    client_address.sin_addr.s_addr = uaddr;
    client_address.sin_port = uport;
    
+   client_len = sizeof(client_address);
+   
    ch = M_START;
-   sendto(sockfd[uid], &ch, 1, 0, (struct sockaddr*) &client_address, client_len);
+   if(sendto(sockfd[uid], &ch, 1, 0, (struct sockaddr*) &client_address, client_len) == -1)
+   {
+      perror("oops: start packet error");
+      pthread_exit(NULL);
+   }
    
    listening[uid] = 1;
    #ifdef DEBUG
