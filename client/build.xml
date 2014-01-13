@@ -7,6 +7,10 @@
     <target name="compile" depends="init">
       <javac srcdir="src" destdir="build/classes" />
     </target>
+    <target name="clean">
+       <delete dir="build" />
+       <delete dir="dist" />
+    </target>
     <target name="jar" depends="compile">
       <jar destfile="dist/snake-client.jar" basedir="build/classes">
          <manifest>

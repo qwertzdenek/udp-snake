@@ -288,6 +288,7 @@ public class Presentation extends JPanel implements ActionListener,
 				bottomLabel.setText("Zadejte nové spojení");
 				listModel.clear();
 				conTimer.purge();
+            rp.clear();
 			} else {
 				String address = ((JTextField) toolbar[0]).getText();
 				String name = ((JTextField) toolbar[1]).getText();
