@@ -5,7 +5,7 @@
       <mkdir dir="dist" />
     </target>
     <target name="compile" depends="init">
-      <javac srcdir="src" destdir="build/classes" />
+      <javac includeantruntime="false" srcdir="src" destdir="build/classes" />
     </target>
     <target name="clean">
        <delete dir="build" />

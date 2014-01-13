@@ -82,8 +82,8 @@ public class Presentation extends JPanel implements ActionListener,
 
 	
 
-	private String[] colorStrings = { "Red", "Green", "Blue", "Brown",
-			"Yellow", "Orange", "Purple", "Black", "Grey" };
+	private String[] colorStrings = { "Červená", "Zelená", "Modrá", "Hnědá",
+			"Žlutá", "Oranžová", "Fialová", "Černá", "Šedá" };
 
 	public Color bg = new Color(238, 229, 222);
 
@@ -163,7 +163,12 @@ public class Presentation extends JPanel implements ActionListener,
 		public void run() {
 			connected = true;
 			loginButton.setText("Odpojit");
-			loginButton.setEnabled(true);
+         conTimer.schedule(new TimerTask() {
+			@Override
+			public void run() {
+			   loginButton.setEnabled(true);
+         }
+         }, 400);
 		}
 	};
 	
@@ -288,7 +293,7 @@ public class Presentation extends JPanel implements ActionListener,
 				bottomLabel.setText("Zadejte nové spojení");
 				listModel.clear();
 				conTimer.purge();
-            rp.clear();
+				rp.clear();
 			} else {
 				String address = ((JTextField) toolbar[0]).getText();
 				String name = ((JTextField) toolbar[1]).getText();
@@ -342,7 +347,7 @@ public class Presentation extends JPanel implements ActionListener,
 							loginButton.setEnabled(true);
 						}
 					}
-				}, 400);
+				}, 200);
 			}
 		}
 	}
