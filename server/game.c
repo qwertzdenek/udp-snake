@@ -53,6 +53,7 @@ you can play it with your friends over the network.
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <time.h>
 
 #include "game.h"
 #include "server-one.h"
@@ -792,7 +793,7 @@ int run()
    pthread_t clients[MAX_PLAYERS];
    pthread_attr_t attr;
    FILE *map_file;
-   //~ FILE *packet_file;
+   FILE *log_file;
    char *basic_map = "basic.map";
    char *pl_name = NULL;
    char ch;
@@ -805,6 +806,9 @@ int run()
    struct in_addr sin_addr;
    int client_len;
    struct con_info *info;
+   time_t rawtime;
+   struct tm *timeinfo;
+   int round = 0;
 
    if (map == NULL)
    {
@@ -821,6 +825,11 @@ int run()
    }
    else
       fclose(map_file);
+
+   time(&rawtime);
+   timeinfo = localtime(&rawtime);
+   strftime(buffer, sizeof(buffer), "Log-%Y-%d-%m-%H%S", timeinfo);
+   log_file = fopen(buffer, "w");
 
    init_queue(&add_requests);
    init_server();
@@ -868,6 +877,8 @@ int run()
 
    while (game)
    {
+      round++;
+      
       // preprocess
       for (i = 0; i < MAX_PLAYERS; i++)
       {
@@ -879,7 +890,15 @@ int run()
             }
             else if (playing[i] == 2 || playing[i] == -1)
             {
-               printf("Player %s is disconnecting\n", players[i]->name);
+               // write running round
+               sprintf(buffer,"%d: ", round);
+               fwrite(buffer, 1, strlen(buffer), log_file);
+               
+               // and log info
+               sprintf(buffer, "Player %s is disconnecting\n", players[i]->name);
+               fwrite(buffer, 1, strlen(buffer), log_file);
+               printf(buffer);
+
                free(players[i]->name);
                free(players[i]);
                players[i] = NULL;
@@ -944,8 +963,16 @@ int run()
             info->port = port;
             
             sin_addr.s_addr = address;
-            printf( "Connected player %d %s, color %d and address %s:%d\n", rc, pl_name, pl_color, inet_ntoa(sin_addr), ntohs(port));
             
+            // write running round
+            sprintf(buffer,"%d: ", round);
+            fwrite(buffer, 1, strlen(buffer), log_file);
+            
+            // and log info
+            sprintf(buffer,"Connected player %d %s, color %d and address %s:%d\n", rc, pl_name, pl_color, inet_ntoa(sin_addr), ntohs(port));
+            fwrite(buffer, 1, strlen(buffer), log_file);
+            printf(buffer);
+
             // initialize server thread
             rc = pthread_create(&clients[rc], &attr, start_server, (void *) info);
             if (rc)
@@ -962,6 +989,11 @@ int run()
    }
    
    pthread_attr_destroy(&attr);
+
+   // write runtime
+   sprintf(buffer,"Running time was %d ticks.\n", round);
+   fwrite(buffer, 1, strlen(buffer), log_file);
+   fclose(log_file);
    
    for (i = 0; i < MAX_PLAYERS; i++)
    {
